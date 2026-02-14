@@ -3,6 +3,7 @@ import { Hero } from "@/components/Hero";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { RecipeGrid } from "@/components/RecipeGrid";
 import { Footer } from "@/components/Footer";
+import { EventsSection } from "@/components/EventsSection";
 
 const Index = () => {
   return (
@@ -13,6 +14,7 @@ const Index = () => {
         <CategoryFilter />
       </div>
       <RecipeGrid />
+      <EventsSection />
       <Footer />
     </div>
   );
