@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { getEvents } from "@/lib/events";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, Image as ImageIcon } from "lucide-react";
+import { CalendarDays, Image as ImageIcon, FileText, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const EventsSection = () => {
   const [events, setEvents] = useState([]);
@@ -10,40 +11,62 @@ export const EventsSection = () => {
     setEvents(getEvents());
   }, []);
 
-  const upcomingEvents = events.filter((e) => new Date(e.date) >= new Date());
-  const pastEvents = events.filter((e) => new Date(e.date) < new Date());
+  const upcomingEvents = events.filter((e) => e.date && new Date(e.date) >= new Date());
+  const pastEvents = events.filter((e) => e.date && new Date(e.date) < new Date());
+  const undatedEvents = events.filter((e) => !e.date);
+
+  const allUpcoming = [...undatedEvents, ...upcomingEvents];
 
   if (events.length === 0) return null;
 
   const renderEventCard = (event) => (
     <Card key={event.id} className="overflow-hidden group hover:shadow-card-hover transition-shadow">
-      <div className="aspect-video bg-muted overflow-hidden">
-        {event.imageUrl ? (
+      {event.imageUrl && (
+        <div className="w-full overflow-hidden">
           <img
             src={event.imageUrl}
-            alt={event.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            alt={event.title || "Evento"}
+            className="w-full h-auto object-contain group-hover:scale-[1.02] transition-transform duration-500"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
+        </div>
+      )}
+      <CardContent className="p-6">
+        {event.date && (
+          <div className="flex items-center gap-2 text-sm text-primary mb-3">
+            <CalendarDays className="h-4 w-4" />
+            <span>
+              {new Date(event.date).toLocaleDateString("pt-PT", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
           </div>
         )}
-      </div>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-2 text-sm text-primary mb-2">
-          <CalendarDays className="h-4 w-4" />
-          <span>
-            {new Date(event.date).toLocaleDateString("pt-PT", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
-        </div>
-        <h3 className="text-lg font-serif font-semibold text-foreground mb-2">{event.title}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-3">{event.description}</p>
+        {event.title && (
+          <h3 className="text-xl font-serif font-semibold text-foreground mb-3">{event.title}</h3>
+        )}
+        {event.description && (
+          <p className="text-sm text-muted-foreground whitespace-pre-line">{event.description}</p>
+        )}
+        {event.files && event.files.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm font-medium text-foreground">Ficheiros:</p>
+            {event.files.map((file, idx) => (
+              <a
+                key={idx}
+                href={file.dataUrl}
+                download={file.name}
+                className="flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <FileText className="h-4 w-4" />
+                <span>{file.name}</span>
+                <Download className="h-3 w-3 ml-auto" />
+              </a>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -51,15 +74,15 @@ export const EventsSection = () => {
   return (
     <section id="events" className="py-16 bg-accent/30">
       <div className="container mx-auto px-4">
-        {upcomingEvents.length > 0 && (
+        {allUpcoming.length > 0 && (
           <>
             <div className="text-center mb-12">
               <h2 className="text-4xl font-serif font-bold text-foreground mb-3">
                 PRÓXIMOS EVENTOS / ÚLTIMOS POSTS
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {upcomingEvents.map(renderEventCard)}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+              {allUpcoming.map(renderEventCard)}
             </div>
           </>
         )}
@@ -71,7 +94,7 @@ export const EventsSection = () => {
                 ÚLTIMOS EVENTOS
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {pastEvents.map(renderEventCard)}
             </div>
           </>
