@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, LogOut, CalendarDays, Image as ImageIcon, FileText, X } from "lucide-react";
+import GalleryManager from "@/components/GalleryManager";
 import { toast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
@@ -332,6 +333,9 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+        <div className="mt-8">
+          <GalleryManager />
+        </div>
       </main>
     </div>
   );
