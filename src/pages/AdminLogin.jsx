@@ -30,35 +30,35 @@ const AdminLogin = () => {
           <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
             <Lock className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-serif">Admin Login</CardTitle>
-          <CardDescription>Sign in to manage events and images</CardDescription>
+          <CardTitle className="text-2xl font-serif">Painel de Administração</CardTitle>
+          <CardDescription>Inicie sessão para gerir eventos e conteúdos</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Utilizador</Label>
               <Input
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                placeholder="Introduza o utilizador"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Palavra-passe</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder="Introduza a palavra-passe"
                 required
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-destructive">Credenciais inválidas</p>}
             <Button type="submit" className="w-full">
-              Sign In
+              Entrar
             </Button>
           </form>
         </CardContent>

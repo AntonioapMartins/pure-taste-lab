@@ -1,52 +1,113 @@
-import { useState, useRef } from "react";
-import { getGallery, addGalleryImage, removeGalleryImage, GALLERY_PAGES } from "@/lib/galleries";
+import { useState, useRef, useCallback } from "react";
+import {
+  getPageGalleries, createGallery, updateGalleryMeta,
+  deleteGallery, addPhotosToGallery, removePhoto, GALLERY_PAGES,
+} from "@/lib/galleries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Image as ImageIcon, Plus, Trash2 } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Image as ImageIcon, Plus, Trash2, GalleryHorizontal, LayoutGrid, Pencil } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const GalleryManager = () => {
   const [activeTab, setActiveTab] = useState(GALLERY_PAGES[0].id);
-  const [galleries, setGalleries] = useState(() => {
-    const obj = {};
-    GALLERY_PAGES.forEach((p) => { obj[p.id] = getGallery(p.id); });
-    return obj;
-  });
-  const [caption, setCaption] = useState("");
-  const fileRef = useRef(null);
+  const [, setTick] = useState(0);
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
 
-  const refresh = () => {
-    const obj = {};
-    GALLERY_PAGES.forEach((p) => { obj[p.id] = getGallery(p.id); });
-    setGalleries(obj);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newType, setNewType] = useState("grid");
+
+  const [editGallery, setEditGallery] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editType, setEditType] = useState("grid");
+
+  const fileRef = useRef(null);
+  const [uploadTargetId, setUploadTargetId] = useState(null);
+
+  const galleries = getPageGalleries(activeTab);
+
+  const handleCreate = () => {
+    if (!newTitle.trim()) {
+      toast({ title: "Título obrigatório", variant: "destructive" });
+      return;
+    }
+    createGallery(activeTab, { title: newTitle.trim(), type: newType });
+    setNewTitle("");
+    setNewType("grid");
+    setCreateOpen(false);
+    refresh();
+    toast({ title: "Galeria criada" });
   };
 
-  const handleAddImage = (e) => {
+  const handleUpdate = () => {
+    if (!editGallery) return;
+    updateGalleryMeta(activeTab, editGallery.id, { title: editTitle, type: editType });
+    setEditGallery(null);
+    refresh();
+    toast({ title: "Galeria atualizada" });
+  };
+
+  const handleDelete = (galleryId) => {
+    deleteGallery(activeTab, galleryId);
+    refresh();
+    toast({ title: "Galeria eliminada" });
+  };
+
+  const openUpload = (galleryId) => {
+    setUploadTargetId(galleryId);
+    setTimeout(() => fileRef.current?.click(), 50);
+  };
+
+  const handleFiles = (e) => {
     const files = Array.from(e.target.files || []);
+    if (!uploadTargetId || files.length === 0) return;
+
+    let loaded = 0;
+    const results = [];
+
     files.forEach((file) => {
       if (file.size > 5 * 1024 * 1024) {
         toast({ title: "Imagem muito grande", description: `${file.name} excede 5MB.`, variant: "destructive" });
+        loaded++;
+        if (loaded === files.length) {
+          addPhotosToGallery(activeTab, uploadTargetId, results);
+          refresh();
+          toast({ title: `${results.length} foto(s) adicionada(s)` });
+        }
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        addGalleryImage(activeTab, { dataUrl: reader.result, caption: caption || file.name });
-        refresh();
-        toast({ title: "Imagem adicionada" });
+        results.push({ dataUrl: reader.result, caption: file.name });
+        loaded++;
+        if (loaded === files.length) {
+          addPhotosToGallery(activeTab, uploadTargetId, results);
+          refresh();
+          toast({ title: `${results.length} foto(s) adicionada(s)` });
+        }
       };
       reader.readAsDataURL(file);
     });
+
     if (fileRef.current) fileRef.current.value = "";
-    setCaption("");
   };
 
-  const handleRemove = (pageId, imageId) => {
-    removeGalleryImage(pageId, imageId);
+  const handleRemovePhoto = (galleryId, photoId) => {
+    removePhoto(activeTab, galleryId, photoId);
     refresh();
-    toast({ title: "Imagem removida" });
+  };
+
+  const totalPhotos = (pageId) => {
+    return getPageGalleries(pageId).reduce((sum, g) => sum + g.photos.length, 0);
   };
 
   return (
@@ -63,9 +124,9 @@ const GalleryManager = () => {
             {GALLERY_PAGES.map((page) => (
               <TabsTrigger key={page.id} value={page.id} className="text-xs sm:text-sm">
                 {page.label}
-                {galleries[page.id]?.length > 0 && (
+                {totalPhotos(page.id) > 0 && (
                   <span className="ml-1.5 bg-primary/10 text-primary rounded-full px-1.5 py-0.5 text-xs">
-                    {galleries[page.id].length}
+                    {totalPhotos(page.id)}
                   </span>
                 )}
               </TabsTrigger>
@@ -74,57 +135,81 @@ const GalleryManager = () => {
 
           {GALLERY_PAGES.map((page) => (
             <TabsContent key={page.id} value={page.id}>
-              <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                <div className="flex-1">
-                  <Label htmlFor="gallery-caption" className="text-xs text-muted-foreground mb-1">Legenda (opcional)</Label>
-                  <Input
-                    id="gallery-caption"
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                    placeholder="Legenda da imagem"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button size="sm" onClick={() => fileRef.current?.click()}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Adicionar Fotos
-                  </Button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleAddImage}
-                  />
-                </div>
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {getPageGalleries(page.id).length} galeria(s) nesta página
+                </p>
+                <Button size="sm" onClick={() => { setCreateOpen(true); setNewTitle(""); setNewType("grid"); }}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nova Galeria
+                </Button>
               </div>
 
-              {galleries[page.id]?.length === 0 ? (
+              {getPageGalleries(page.id).length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
                   <ImageIcon className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Sem fotos nesta galeria</p>
-                  <p className="text-xs">Adicione fotos para que apareçam na página de {page.label}.</p>
+                  <p className="text-sm">Sem galerias nesta página</p>
+                  <p className="text-xs">Crie uma galeria para adicionar fotos.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {galleries[page.id].map((img) => (
-                    <div key={img.id} className="relative group rounded-lg overflow-hidden aspect-[4/3]">
-                      <img src={img.dataUrl} alt={img.caption} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                          onClick={() => handleRemove(page.id, img.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {img.caption && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1 truncate">
-                          {img.caption}
+                <div className="space-y-6">
+                  {getPageGalleries(page.id).map((gallery) => (
+                    <div key={gallery.id} className="border border-border rounded-lg p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div className="flex items-center gap-2">
+                          {gallery.type === "carousel" ? (
+                            <GalleryHorizontal className="h-4 w-4 text-primary" />
+                          ) : (
+                            <LayoutGrid className="h-4 w-4 text-primary" />
+                          )}
+                          <h4 className="font-semibold text-foreground">{gallery.title}</h4>
+                          <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                            {gallery.type === "carousel" ? "Carrossel" : "Grelha"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {gallery.photos.length} foto(s)
+                          </span>
                         </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => openUpload(gallery.id)}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Fotos
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                            setEditGallery(gallery);
+                            setEditTitle(gallery.title);
+                            setEditType(gallery.type);
+                          }}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(gallery.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {gallery.photos.length > 0 ? (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                          {gallery.photos.map((photo) => (
+                            <div key={photo.id} className="relative group rounded overflow-hidden aspect-square">
+                              <img src={photo.dataUrl} alt={photo.caption} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                                  onClick={() => handleRemovePhoto(gallery.id, photo.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          Clique em "Fotos" para adicionar imagens a esta galeria.
+                        </p>
                       )}
                     </div>
                   ))}
@@ -133,6 +218,66 @@ const GalleryManager = () => {
             </TabsContent>
           ))}
         </Tabs>
+
+        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
+
+        {/* Dialog Criar Galeria */}
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="font-serif">Nova Galeria</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Título</Label>
+                <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Ex: Quartos, Piscina..." />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Galeria</Label>
+                <Select value={newType} onValueChange={setNewType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="grid">Grelha</SelectItem>
+                    <SelectItem value="carousel">Carrossel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreate}>Criar</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Editar Galeria */}
+        <Dialog open={!!editGallery} onOpenChange={(o) => { if (!o) setEditGallery(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="font-serif">Editar Galeria</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Título</Label>
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Galeria</Label>
+                <Select value={editType} onValueChange={setEditType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="grid">Grelha</SelectItem>
+                    <SelectItem value="carousel">Carrossel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setEditGallery(null)}>Cancelar</Button>
+                <Button onClick={handleUpdate}>Guardar</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
