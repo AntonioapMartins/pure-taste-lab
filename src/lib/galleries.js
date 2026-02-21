@@ -1,6 +1,6 @@
-const GALLERIES_KEY = "rilhadas_galleries";
+const GALLERIES_KEY = "rilhadas_galleries_v2";
 
-export function getGalleries() {
+export function getAllGalleries() {
   try {
     const data = localStorage.getItem(GALLERIES_KEY);
     return data ? JSON.parse(data) : {};
@@ -9,37 +9,70 @@ export function getGalleries() {
   }
 }
 
-export function getGallery(pageId) {
-  const galleries = getGalleries();
-  return galleries[pageId] || [];
+export function getPageGalleries(pageId) {
+  const all = getAllGalleries();
+  return all[pageId] || [];
 }
 
-export function saveGalleries(galleries) {
-  localStorage.setItem(GALLERIES_KEY, JSON.stringify(galleries));
+function saveAll(data) {
+  localStorage.setItem(GALLERIES_KEY, JSON.stringify(data));
 }
 
-export function addGalleryImage(pageId, imageData) {
-  const galleries = getGalleries();
-  if (!galleries[pageId]) galleries[pageId] = [];
-  galleries[pageId].push({
+export function createGallery(pageId, { title = "", type = "grid" }) {
+  const all = getAllGalleries();
+  if (!all[pageId]) all[pageId] = [];
+  const gallery = {
     id: crypto.randomUUID(),
-    ...imageData,
+    title,
+    type,
+    photos: [],
     createdAt: new Date().toISOString(),
+  };
+  all[pageId].push(gallery);
+  saveAll(all);
+  return gallery;
+}
+
+export function updateGalleryMeta(pageId, galleryId, { title, type }) {
+  const all = getAllGalleries();
+  const list = all[pageId] || [];
+  const idx = list.findIndex((g) => g.id === galleryId);
+  if (idx === -1) return;
+  if (title !== undefined) list[idx].title = title;
+  if (type !== undefined) list[idx].type = type;
+  saveAll(all);
+}
+
+export function deleteGallery(pageId, galleryId) {
+  const all = getAllGalleries();
+  if (!all[pageId]) return;
+  all[pageId] = all[pageId].filter((g) => g.id !== galleryId);
+  saveAll(all);
+}
+
+export function addPhotosToGallery(pageId, galleryId, photos) {
+  const all = getAllGalleries();
+  const list = all[pageId] || [];
+  const gallery = list.find((g) => g.id === galleryId);
+  if (!gallery) return;
+  photos.forEach((p) => {
+    gallery.photos.push({
+      id: crypto.randomUUID(),
+      dataUrl: p.dataUrl,
+      caption: p.caption || "",
+      createdAt: new Date().toISOString(),
+    });
   });
-  saveGalleries(galleries);
+  saveAll(all);
 }
 
-export function removeGalleryImage(pageId, imageId) {
-  const galleries = getGalleries();
-  if (!galleries[pageId]) return;
-  galleries[pageId] = galleries[pageId].filter((img) => img.id !== imageId);
-  saveGalleries(galleries);
-}
-
-export function reorderGallery(pageId, images) {
-  const galleries = getGalleries();
-  galleries[pageId] = images;
-  saveGalleries(galleries);
+export function removePhoto(pageId, galleryId, photoId) {
+  const all = getAllGalleries();
+  const list = all[pageId] || [];
+  const gallery = list.find((g) => g.id === galleryId);
+  if (!gallery) return;
+  gallery.photos = gallery.photos.filter((p) => p.id !== photoId);
+  saveAll(all);
 }
 
 export const GALLERY_PAGES = [
