@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import {
   getPageGalleries, createGallery, updateGalleryMeta,
   deleteGallery, addPhotosToGallery, removePhoto, GALLERY_PAGES,
+  compressImage,
 } from "@/lib/galleries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,11 @@ const GalleryManager = () => {
       toast({ title: "Título obrigatório", variant: "destructive" });
       return;
     }
-    createGallery(activeTab, { title: newTitle.trim(), type: newType });
+    const result = createGallery(activeTab, { title: newTitle.trim(), type: newType });
+    if (!result) {
+      toast({ title: "Armazenamento cheio", description: "Elimine algumas fotos ou galerias para libertar espaço.", variant: "destructive" });
+      return;
+    }
     setNewTitle("");
     setNewType("grid");
     setCreateOpen(false);
@@ -67,36 +72,35 @@ const GalleryManager = () => {
     setTimeout(() => fileRef.current?.click(), 50);
   };
 
-  const handleFiles = (e) => {
+  const handleFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!uploadTargetId || files.length === 0) return;
 
-    let loaded = 0;
     const results = [];
 
-    files.forEach((file) => {
+    for (const file of files) {
       if (file.size > 5 * 1024 * 1024) {
         toast({ title: "Imagem muito grande", description: `${file.name} excede 5MB.`, variant: "destructive" });
-        loaded++;
-        if (loaded === files.length) {
-          addPhotosToGallery(activeTab, uploadTargetId, results);
-          refresh();
-          toast({ title: `${results.length} foto(s) adicionada(s)` });
-        }
-        return;
+        continue;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        results.push({ dataUrl: reader.result, caption: file.name });
-        loaded++;
-        if (loaded === files.length) {
-          addPhotosToGallery(activeTab, uploadTargetId, results);
-          refresh();
-          toast({ title: `${results.length} foto(s) adicionada(s)` });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+      const compressed = await compressImage(dataUrl);
+      results.push({ dataUrl: compressed, caption: file.name });
+    }
+
+    if (results.length > 0) {
+      const ok = addPhotosToGallery(activeTab, uploadTargetId, results);
+      if (!ok) {
+        toast({ title: "Armazenamento cheio", description: "Elimine algumas fotos para libertar espaço.", variant: "destructive" });
+      } else {
+        refresh();
+        toast({ title: `${results.length} foto(s) adicionada(s)` });
+      }
+    }
 
     if (fileRef.current) fileRef.current.value = "";
   };

@@ -15,7 +15,38 @@ export function getPageGalleries(pageId) {
 }
 
 function saveAll(data) {
-  localStorage.setItem(GALLERIES_KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(GALLERIES_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    if (e?.name === "QuotaExceededError") {
+      return false;
+    }
+    return false;
+  }
+}
+
+// Compress image to reduce base64 size
+export function compressImage(dataUrl, maxWidth = 1200, quality = 0.7) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let w = img.width;
+      let h = img.height;
+      if (w > maxWidth) {
+        h = (maxWidth / w) * h;
+        w = maxWidth;
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 export function createGallery(pageId, { title = "", type = "grid" }) {
@@ -29,7 +60,11 @@ export function createGallery(pageId, { title = "", type = "grid" }) {
     createdAt: new Date().toISOString(),
   };
   all[pageId].push(gallery);
-  saveAll(all);
+  const ok = saveAll(all);
+  if (!ok) {
+    all[pageId].pop();
+    return null;
+  }
   return gallery;
 }
 
@@ -54,16 +89,23 @@ export function addPhotosToGallery(pageId, galleryId, photos) {
   const all = getAllGalleries();
   const list = all[pageId] || [];
   const gallery = list.find((g) => g.id === galleryId);
-  if (!gallery) return;
+  if (!gallery) return false;
+  const added = [];
   photos.forEach((p) => {
-    gallery.photos.push({
+    added.push({
       id: crypto.randomUUID(),
       dataUrl: p.dataUrl,
       caption: p.caption || "",
       createdAt: new Date().toISOString(),
     });
   });
-  saveAll(all);
+  gallery.photos.push(...added);
+  const ok = saveAll(all);
+  if (!ok) {
+    gallery.photos.splice(gallery.photos.length - added.length, added.length);
+    return false;
+  }
+  return true;
 }
 
 export function removePhoto(pageId, galleryId, photoId) {
