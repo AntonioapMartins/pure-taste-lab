@@ -1,8 +1,32 @@
-import { getByKey, put } from "./indexedDB";
+const GALLERIES_KEY = "rilhadas_galleries_v2";
 
-const STORE = "galleries";
+export function getAllGalleries() {
+  try {
+    const data = localStorage.getItem(GALLERIES_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+}
 
-// Compress image to reduce size
+export function getPageGalleries(pageId) {
+  const all = getAllGalleries();
+  return all[pageId] || [];
+}
+
+function saveAll(data) {
+  try {
+    localStorage.setItem(GALLERIES_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    if (e?.name === "QuotaExceededError") {
+      return false;
+    }
+    return false;
+  }
+}
+
+// Compress image to reduce base64 size
 export function compressImage(dataUrl, maxWidth = 1200, quality = 0.7) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -25,21 +49,9 @@ export function compressImage(dataUrl, maxWidth = 1200, quality = 0.7) {
   });
 }
 
-async function getPageRecord(pageId) {
-  const record = await getByKey(STORE, pageId);
-  return record ? record.galleries : [];
-}
-
-async function savePageRecord(pageId, galleries) {
-  await put(STORE, { pageId, galleries });
-}
-
-export async function getPageGalleries(pageId) {
-  return getPageRecord(pageId);
-}
-
-export async function createGallery(pageId, { title = "", type = "grid" }) {
-  const galleries = await getPageRecord(pageId);
+export function createGallery(pageId, { title = "", type = "grid" }) {
+  const all = getAllGalleries();
+  if (!all[pageId]) all[pageId] = [];
   const gallery = {
     id: crypto.randomUUID(),
     title,
@@ -47,48 +59,62 @@ export async function createGallery(pageId, { title = "", type = "grid" }) {
     photos: [],
     createdAt: new Date().toISOString(),
   };
-  galleries.push(gallery);
-  await savePageRecord(pageId, galleries);
+  all[pageId].push(gallery);
+  const ok = saveAll(all);
+  if (!ok) {
+    all[pageId].pop();
+    return null;
+  }
   return gallery;
 }
 
-export async function updateGalleryMeta(pageId, galleryId, { title, type }) {
-  const galleries = await getPageRecord(pageId);
-  const idx = galleries.findIndex((g) => g.id === galleryId);
+export function updateGalleryMeta(pageId, galleryId, { title, type }) {
+  const all = getAllGalleries();
+  const list = all[pageId] || [];
+  const idx = list.findIndex((g) => g.id === galleryId);
   if (idx === -1) return;
-  if (title !== undefined) galleries[idx].title = title;
-  if (type !== undefined) galleries[idx].type = type;
-  await savePageRecord(pageId, galleries);
+  if (title !== undefined) list[idx].title = title;
+  if (type !== undefined) list[idx].type = type;
+  saveAll(all);
 }
 
-export async function deleteGallery(pageId, galleryId) {
-  const galleries = await getPageRecord(pageId);
-  const filtered = galleries.filter((g) => g.id !== galleryId);
-  await savePageRecord(pageId, filtered);
+export function deleteGallery(pageId, galleryId) {
+  const all = getAllGalleries();
+  if (!all[pageId]) return;
+  all[pageId] = all[pageId].filter((g) => g.id !== galleryId);
+  saveAll(all);
 }
 
-export async function addPhotosToGallery(pageId, galleryId, photos) {
-  const galleries = await getPageRecord(pageId);
-  const gallery = galleries.find((g) => g.id === galleryId);
+export function addPhotosToGallery(pageId, galleryId, photos) {
+  const all = getAllGalleries();
+  const list = all[pageId] || [];
+  const gallery = list.find((g) => g.id === galleryId);
   if (!gallery) return false;
+  const added = [];
   photos.forEach((p) => {
-    gallery.photos.push({
+    added.push({
       id: crypto.randomUUID(),
       dataUrl: p.dataUrl,
       caption: p.caption || "",
       createdAt: new Date().toISOString(),
     });
   });
-  await savePageRecord(pageId, galleries);
+  gallery.photos.push(...added);
+  const ok = saveAll(all);
+  if (!ok) {
+    gallery.photos.splice(gallery.photos.length - added.length, added.length);
+    return false;
+  }
   return true;
 }
 
-export async function removePhoto(pageId, galleryId, photoId) {
-  const galleries = await getPageRecord(pageId);
-  const gallery = galleries.find((g) => g.id === galleryId);
+export function removePhoto(pageId, galleryId, photoId) {
+  const all = getAllGalleries();
+  const list = all[pageId] || [];
+  const gallery = list.find((g) => g.id === galleryId);
   if (!gallery) return;
   gallery.photos = gallery.photos.filter((p) => p.id !== photoId);
-  await savePageRecord(pageId, galleries);
+  saveAll(all);
 }
 
 export const GALLERY_PAGES = [

@@ -1,32 +1,43 @@
-import { getAll, put, deleteByKey } from "./indexedDB";
+const EVENTS_KEY = "savory_events";
 
-const STORE = "events";
-
-export async function getEvents() {
-  const events = await getAll(STORE);
-  return events;
+export function getEvents() {
+  try {
+    const data = localStorage.getItem(EVENTS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
 }
 
-export async function addEvent(event) {
+export function saveEvents(events) {
+  localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+}
+
+export function addEvent(event) {
+  const events = getEvents();
   const newEvent = {
     ...event,
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };
-  await put(STORE, newEvent);
+  events.push(newEvent);
+  saveEvents(events);
   return newEvent;
 }
 
-export async function updateEvent(id, data) {
-  const events = await getAll(STORE);
-  const existing = events.find((e) => e.id === id);
-  if (!existing) return null;
-  const updated = { ...existing, ...data };
-  await put(STORE, updated);
-  return updated;
+export function updateEvent(id, data) {
+  const events = getEvents();
+  const idx = events.findIndex((e) => e.id === id);
+  if (idx === -1) return null;
+  events[idx] = { ...events[idx], ...data };
+  saveEvents(events);
+  return events[idx];
 }
 
-export async function deleteEvent(id) {
-  await deleteByKey(STORE, id);
+export function deleteEvent(id) {
+  const events = getEvents();
+  const filtered = events.filter((e) => e.id !== id);
+  if (filtered.length === events.length) return false;
+  saveEvents(filtered);
   return true;
 }
