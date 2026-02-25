@@ -8,7 +8,7 @@ export const EventsSection = () => {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    setEvents(getEvents());
+    getEvents().then(setEvents);
   }, []);
 
   const upcomingEvents = events.filter((e) => e.date && new Date(e.date) >= new Date());
