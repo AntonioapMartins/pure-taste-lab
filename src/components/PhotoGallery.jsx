@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getPageGalleries } from "@/lib/galleries";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -7,10 +7,13 @@ import {
 } from "@/components/ui/carousel";
 
 export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
+  const [galleries, setGalleries] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
 
-  const galleries = getPageGalleries(pageId);
+  useEffect(() => {
+    getPageGalleries(pageId).then(setGalleries);
+  }, [pageId]);
 
   const openLightbox = (photos, idx) => {
     setLightboxPhotos(photos);

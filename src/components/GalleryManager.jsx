@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   getPageGalleries, createGallery, updateGalleryMeta,
   deleteGallery, addPhotosToGallery, removePhoto, GALLERY_PAGES,
@@ -20,8 +20,8 @@ import { toast } from "@/hooks/use-toast";
 
 const GalleryManager = () => {
   const [activeTab, setActiveTab] = useState(GALLERY_PAGES[0].id);
-  const [, setTick] = useState(0);
-  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  const [galleries, setGalleries] = useState({});
+  const [photoCounts, setPhotoCounts] = useState({});
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -34,36 +34,48 @@ const GalleryManager = () => {
   const fileRef = useRef(null);
   const [uploadTargetId, setUploadTargetId] = useState(null);
 
-  const galleries = getPageGalleries(activeTab);
+  const loadGalleries = useCallback(async () => {
+    const results = {};
+    const counts = {};
+    for (const page of GALLERY_PAGES) {
+      const g = await getPageGalleries(page.id);
+      results[page.id] = g;
+      counts[page.id] = g.reduce((sum, gal) => sum + gal.photos.length, 0);
+    }
+    setGalleries(results);
+    setPhotoCounts(counts);
+  }, []);
 
-  const handleCreate = () => {
+  useEffect(() => {
+    loadGalleries();
+  }, [loadGalleries]);
+
+  const currentGalleries = galleries[activeTab] || [];
+
+  const handleCreate = async () => {
     if (!newTitle.trim()) {
       toast({ title: "Título obrigatório", variant: "destructive" });
       return;
     }
-    const result = createGallery(activeTab, { title: newTitle.trim(), type: newType });
-    if (!result) {
-      toast({ title: "Armazenamento cheio", description: "Elimine algumas fotos ou galerias para libertar espaço.", variant: "destructive" });
-      return;
-    }
+    await createGallery(activeTab, { title: newTitle.trim(), type: newType });
     setNewTitle("");
     setNewType("grid");
     setCreateOpen(false);
-    refresh();
+    await loadGalleries();
     toast({ title: "Galeria criada" });
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editGallery) return;
-    updateGalleryMeta(activeTab, editGallery.id, { title: editTitle, type: editType });
+    await updateGalleryMeta(activeTab, editGallery.id, { title: editTitle, type: editType });
     setEditGallery(null);
-    refresh();
+    await loadGalleries();
     toast({ title: "Galeria atualizada" });
   };
 
-  const handleDelete = (galleryId) => {
-    deleteGallery(activeTab, galleryId);
-    refresh();
+  const handleDelete = async (galleryId) => {
+    await deleteGallery(activeTab, galleryId);
+    await loadGalleries();
     toast({ title: "Galeria eliminada" });
   };
 
@@ -77,10 +89,9 @@ const GalleryManager = () => {
     if (!uploadTargetId || files.length === 0) return;
 
     const results = [];
-
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "Imagem muito grande", description: `${file.name} excede 5MB.`, variant: "destructive" });
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: "Imagem muito grande", description: `${file.name} excede 10MB.`, variant: "destructive" });
         continue;
       }
       const dataUrl = await new Promise((resolve) => {
@@ -93,25 +104,17 @@ const GalleryManager = () => {
     }
 
     if (results.length > 0) {
-      const ok = addPhotosToGallery(activeTab, uploadTargetId, results);
-      if (!ok) {
-        toast({ title: "Armazenamento cheio", description: "Elimine algumas fotos para libertar espaço.", variant: "destructive" });
-      } else {
-        refresh();
-        toast({ title: `${results.length} foto(s) adicionada(s)` });
-      }
+      await addPhotosToGallery(activeTab, uploadTargetId, results);
+      await loadGalleries();
+      toast({ title: `${results.length} foto(s) adicionada(s)` });
     }
 
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const handleRemovePhoto = (galleryId, photoId) => {
-    removePhoto(activeTab, galleryId, photoId);
-    refresh();
-  };
-
-  const totalPhotos = (pageId) => {
-    return getPageGalleries(pageId).reduce((sum, g) => sum + g.photos.length, 0);
+  const handleRemovePhoto = async (galleryId, photoId) => {
+    await removePhoto(activeTab, galleryId, photoId);
+    await loadGalleries();
   };
 
   return (
@@ -128,9 +131,9 @@ const GalleryManager = () => {
             {GALLERY_PAGES.map((page) => (
               <TabsTrigger key={page.id} value={page.id} className="text-xs sm:text-sm">
                 {page.label}
-                {totalPhotos(page.id) > 0 && (
+                {(photoCounts[page.id] || 0) > 0 && (
                   <span className="ml-1.5 bg-primary/10 text-primary rounded-full px-1.5 py-0.5 text-xs">
-                    {totalPhotos(page.id)}
+                    {photoCounts[page.id]}
                   </span>
                 )}
               </TabsTrigger>
@@ -141,7 +144,7 @@ const GalleryManager = () => {
             <TabsContent key={page.id} value={page.id}>
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-muted-foreground">
-                  {getPageGalleries(page.id).length} galeria(s) nesta página
+                  {(galleries[page.id] || []).length} galeria(s) nesta página
                 </p>
                 <Button size="sm" onClick={() => { setCreateOpen(true); setNewTitle(""); setNewType("grid"); }}>
                   <Plus className="h-4 w-4 mr-1" />
@@ -149,7 +152,7 @@ const GalleryManager = () => {
                 </Button>
               </div>
 
-              {getPageGalleries(page.id).length === 0 ? (
+              {(galleries[page.id] || []).length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
                   <ImageIcon className="h-10 w-10 mx-auto mb-3 opacity-50" />
                   <p className="text-sm">Sem galerias nesta página</p>
@@ -157,7 +160,7 @@ const GalleryManager = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {getPageGalleries(page.id).map((gallery) => (
+                  {(galleries[page.id] || []).map((gallery) => (
                     <div key={gallery.id} className="border border-border rounded-lg p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <div className="flex items-center gap-2">
@@ -225,7 +228,6 @@ const GalleryManager = () => {
 
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
 
-        {/* Dialog Criar Galeria */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
@@ -254,7 +256,6 @@ const GalleryManager = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Dialog Editar Galeria */}
         <Dialog open={!!editGallery} onOpenChange={(o) => { if (!o) setEditGallery(null); }}>
           <DialogContent className="max-w-sm">
             <DialogHeader>

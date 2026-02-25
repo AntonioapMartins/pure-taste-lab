@@ -30,12 +30,17 @@ const AdminDashboard = () => {
   const fileInputRef = useRef(null);
   const docInputRef = useRef(null);
 
+  const loadEvents = async () => {
+    const data = await getEvents();
+    setEvents(data);
+  };
+
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate("/admin");
       return;
     }
-    setEvents(getEvents());
+    loadEvents();
   }, [navigate]);
 
   const resetForm = () => {
@@ -65,8 +70,8 @@ const AdminDashboard = () => {
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Imagem muito grande", description: "Máximo 5MB permitido.", variant: "destructive" });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Imagem muito grande", description: "Máximo 10MB permitido.", variant: "destructive" });
       return;
     }
     const reader = new FileReader();
@@ -94,7 +99,7 @@ const AdminDashboard = () => {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const data = {
@@ -111,21 +116,21 @@ const AdminDashboard = () => {
     }
 
     if (editingEvent) {
-      updateEvent(editingEvent.id, data);
+      await updateEvent(editingEvent.id, data);
       toast({ title: "Evento atualizado" });
     } else {
-      addEvent(data);
+      await addEvent(data);
       toast({ title: "Evento criado" });
     }
 
-    setEvents(getEvents());
+    await loadEvents();
     setDialogOpen(false);
     resetForm();
   };
 
-  const handleDelete = (id) => {
-    deleteEvent(id);
-    setEvents(getEvents());
+  const handleDelete = async (id) => {
+    await deleteEvent(id);
+    await loadEvents();
     toast({ title: "Evento eliminado" });
   };
 
@@ -235,7 +240,7 @@ const AdminDashboard = () => {
                       ) : (
                         <div className="py-4">
                           <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                          <p className="text-sm text-muted-foreground">Clique para carregar (máx. 5MB)</p>
+                          <p className="text-sm text-muted-foreground">Clique para carregar (máx. 10MB)</p>
                         </div>
                       )}
                     </div>
