@@ -1,21 +1,40 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  CalendarDays,
+  FileText,
+  Image as ImageIcon,
+  LogOut,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { addEvent, deleteEvent, getEvents, updateEvent } from "@/api/events";
 import { isAuthenticated, logout } from "@/lib/auth";
-import { getEvents, addEvent, updateEvent, deleteEvent } from "@/lib/events";
+import { useEffect, useRef, useState } from "react";
+
 import { Button } from "@/components/ui/button";
+import GalleryManager from "@/components/GalleryManager";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, LogOut, CalendarDays, Image as ImageIcon, FileText, X } from "lucide-react";
-import GalleryManager from "@/components/GalleryManager";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -35,8 +54,18 @@ const AdminDashboard = () => {
       navigate("/admin");
       return;
     }
-    setEvents(getEvents());
+
+    loadEvents();
   }, [navigate]);
+
+  const loadEvents = async () => {
+    try {
+      const res = await getEvents();
+      setEvents(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -55,9 +84,11 @@ const AdminDashboard = () => {
   const openEdit = (event) => {
     setEditingEvent(event);
     setTitle(event.title || "");
-    setDate(event.date || "");
+    setDate(event.event_date || "");
     setDescription(event.description || "");
-    setImagePreview(event.imageUrl || "");
+    setImagePreview(
+      event.media_url ? `http://localhost:3001/uploads/${event.media_url}` : ""
+    );
     setFiles(event.files || []);
     setDialogOpen(true);
   };
@@ -66,7 +97,11 @@ const AdminDashboard = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Imagem muito grande", description: "Máximo 5MB permitido.", variant: "destructive" });
+      toast({
+        title: "Imagem muito grande",
+        description: "Máximo 5MB permitido.",
+        variant: "destructive",
+      });
       return;
     }
     const reader = new FileReader();
@@ -78,12 +113,19 @@ const AdminDashboard = () => {
     const selectedFiles = Array.from(e.target.files || []);
     for (const file of selectedFiles) {
       if (file.size > 10 * 1024 * 1024) {
-        toast({ title: "Ficheiro muito grande", description: `${file.name} excede 10MB.`, variant: "destructive" });
+        toast({
+          title: "Ficheiro muito grande",
+          description: `${file.name} excede 10MB.`,
+          variant: "destructive",
+        });
         continue;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFiles((prev) => [...prev, { name: file.name, dataUrl: reader.result }]);
+        setFiles((prev) => [
+          ...prev,
+          { name: file.name, dataUrl: reader.result },
+        ]);
       };
       reader.readAsDataURL(file);
     }
@@ -94,38 +136,44 @@ const AdminDashboard = () => {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const data = {
-      title: title.trim() || "",
-      date: date || "",
-      description: description.trim() || "",
-      imageUrl: imagePreview || "",
-      files,
-    };
+    const formData = new FormData();
 
-    if (!data.title && !data.date && !data.description && !data.imageUrl && data.files.length === 0) {
-      toast({ title: "Evento vazio", description: "Preencha pelo menos um campo.", variant: "destructive" });
-      return;
+    formData.append("title", title);
+    formData.append("event_date", date);
+    formData.append("description", description);
+
+    if (fileInputRef.current?.files[0]) {
+      formData.append("image", fileInputRef.current.files[0]);
     }
 
-    if (editingEvent) {
-      updateEvent(editingEvent.id, data);
-      toast({ title: "Evento atualizado" });
-    } else {
-      addEvent(data);
-      toast({ title: "Evento criado" });
+    for (let i = 0; i < (docInputRef.current?.files?.length || 0); i++) {
+      formData.append("rules", docInputRef.current.files[i]);
     }
 
-    setEvents(getEvents());
-    setDialogOpen(false);
-    resetForm();
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, formData);
+        toast({ title: "Evento atualizado" });
+      } else {
+        await addEvent(formData);
+        toast({ title: "Evento criado" });
+      }
+
+      await loadEvents();
+      setDialogOpen(false);
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro ao guardar evento", variant: "destructive" });
+    }
   };
 
-  const handleDelete = (id) => {
-    deleteEvent(id);
-    setEvents(getEvents());
+  const handleDelete = async (id) => {
+    await deleteEvent(id);
+    await loadEvents();
     toast({ title: "Evento eliminado" });
   };
 
@@ -140,7 +188,9 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-serif font-bold text-foreground">Painel de Administração</h1>
+            <h1 className="text-xl font-serif font-bold text-foreground">
+              Painel de Administração
+            </h1>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>
@@ -162,8 +212,12 @@ const AdminDashboard = () => {
                 <CalendarDays className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{events.length}</p>
-                <p className="text-sm text-muted-foreground">Total de Eventos</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {events.length}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Total de Eventos
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -174,7 +228,7 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {events.filter((e) => e.imageUrl).length}
+                  {events.filter((e) => e.media_url).length}
                 </p>
                 <p className="text-sm text-muted-foreground">Com Imagem</p>
               </div>
@@ -187,7 +241,12 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {events.filter((e) => e.date && new Date(e.date) >= new Date()).length}
+                  {
+                    events.filter(
+                      (e) =>
+                        e.event_date && new Date(e.event_date) >= new Date()
+                    ).length
+                  }
                 </p>
                 <p className="text-sm text-muted-foreground">Próximos</p>
               </div>
@@ -198,7 +257,13 @@ const AdminDashboard = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-serif">Eventos</CardTitle>
-            <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+            <Dialog
+              open={dialogOpen}
+              onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) resetForm();
+              }}
+            >
               <DialogTrigger asChild>
                 <Button size="sm" onClick={openCreate}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -214,15 +279,33 @@ const AdminDashboard = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="event-title">Título</Label>
-                    <Input id="event-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título do evento" maxLength={100} />
+                    <Input
+                      id="event-title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Título do evento"
+                      maxLength={100}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="event-date">Data</Label>
-                    <Input id="event-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                    <Input
+                      id="event-date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="event-desc">Descrição</Label>
-                    <Textarea id="event-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descrição do evento" maxLength={2000} rows={4} />
+                    <Textarea
+                      id="event-desc"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Descrição do evento"
+                      maxLength={2000}
+                      rows={4}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Imagem de Capa</Label>
@@ -231,15 +314,27 @@ const AdminDashboard = () => {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="max-h-40 mx-auto rounded-md object-cover" />
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="max-h-40 mx-auto rounded-md object-cover"
+                        />
                       ) : (
                         <div className="py-4">
                           <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                          <p className="text-sm text-muted-foreground">Clique para carregar (máx. 5MB)</p>
+                          <p className="text-sm text-muted-foreground">
+                            Clique para carregar (máx. 5MB)
+                          </p>
                         </div>
                       )}
                     </div>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Ficheiros (regulamentos, inscrições, etc.)</Label>
@@ -249,17 +344,35 @@ const AdminDashboard = () => {
                     >
                       <div className="py-2">
                         <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">Clique para adicionar ficheiros (máx. 10MB cada)</p>
+                        <p className="text-sm text-muted-foreground">
+                          Clique para adicionar ficheiros (máx. 10MB cada)
+                        </p>
                       </div>
                     </div>
-                    <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" multiple className="hidden" onChange={handleDocChange} />
+                    <input
+                      ref={docInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                      multiple
+                      className="hidden"
+                      onChange={handleDocChange}
+                    />
                     {files.length > 0 && (
                       <div className="space-y-1 mt-2">
                         {files.map((file, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-sm bg-muted rounded px-3 py-2">
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 text-sm bg-muted rounded px-3 py-2"
+                          >
                             <FileText className="h-4 w-4 text-primary" />
                             <span className="flex-1 truncate">{file.name}</span>
-                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFile(idx)}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => removeFile(idx)}
+                            >
                               <X className="h-3 w-3" />
                             </Button>
                           </div>
@@ -268,7 +381,11 @@ const AdminDashboard = () => {
                     )}
                   </div>
                   <div className="flex gap-3 justify-end">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setDialogOpen(false)}
+                    >
                       Cancelar
                     </Button>
                     <Button type="submit">
@@ -301,27 +418,51 @@ const AdminDashboard = () => {
                   {events.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell>
-                        {event.imageUrl ? (
-                          <img src={event.imageUrl} alt={event.title} className="w-16 h-12 rounded object-cover" />
+                        {event.media_url ? (
+                          <img
+                            src={`http://localhost:3001/uploads/${event.media_url}`}
+                            alt={event.title}
+                            className="w-16 h-12 rounded object-cover"
+                          />
                         ) : (
                           <div className="w-16 h-12 rounded bg-muted flex items-center justify-center">
                             <ImageIcon className="h-4 w-4 text-muted-foreground" />
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium">{event.title || "—"}</TableCell>
-                      <TableCell>{event.date ? new Date(event.date).toLocaleDateString("pt-PT") : "—"}</TableCell>
+                      <TableCell className="font-medium">
+                        {event.title || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {event.event_date
+                          ? new Date(event.event_date).toLocaleDateString(
+                              "pt-PT"
+                            )
+                          : "—"}
+                      </TableCell>
                       <TableCell>
                         {event.files && event.files.length > 0 ? (
-                          <span className="text-sm text-primary">{event.files.length} ficheiro(s)</span>
-                        ) : "—"}
+                          <span className="text-sm text-primary">
+                            {event.files.length} ficheiro(s)
+                          </span>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(event)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEdit(event)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(event.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(event.id)}
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
