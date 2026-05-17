@@ -6,7 +6,7 @@ import {
   Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext,
 } from "@/components/ui/carousel";
 
-export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
+export const PhotoGallery = ({ pageId, fallbackImages = [], wrapInSection = true, sectionClassName = "py-12 bg-muted/30" }) => {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
 
@@ -48,6 +48,9 @@ export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
 
   if (galleries.length === 0 && !hasFallback) return null;
 
+  const nonEmptyGalleries = galleries.filter((g) => g.photos.length > 0);
+  if (galleries.length > 0 && nonEmptyGalleries.length === 0) return null;
+
   if (hasFallback) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -76,16 +79,15 @@ export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
     );
   }
 
-  return (
+  const content = (
     <div className="space-y-8">
-      {galleries.map((gallery) => {
-        if (gallery.photos.length === 0) return null;
+      {nonEmptyGalleries.map((gallery) => {
         const photos = gallery.photos.map((p) => ({ src: p.dataUrl, alt: p.caption || "" }));
 
         return (
           <div key={gallery.id}>
             {gallery.title && (
-              <h3 className="text-xl font-serif font-semibold text-foreground mb-4">{gallery.title}</h3>
+              <h3 className="text-xl font-serif font-semibold text-foreground mb-4 text-center">{gallery.title}</h3>
             )}
 
             {gallery.type === "carousel" ? (
@@ -133,6 +135,16 @@ export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
         onNext={nextImage}
       />
     </div>
+  );
+
+  if (!wrapInSection) return content;
+
+  return (
+    <section className={sectionClassName}>
+      <div className="container mx-auto px-4 max-w-6xl">
+        {content}
+      </div>
+    </section>
   );
 };
 

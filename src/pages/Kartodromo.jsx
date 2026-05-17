@@ -403,15 +403,7 @@ const Kartodromo = () => {
         </div>
       </section>
 
-      {/* Galeria */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-serif font-bold text-foreground text-center mb-8">Galeria</h2>
-          <div className="max-w-5xl mx-auto">
-            <PhotoGallery pageId="kartodromo" />
-          </div>
-        </div>
-      </section>
+      <PhotoGallery pageId="kartodromo" />
 
       <EventsSection />
     </PageLayout>

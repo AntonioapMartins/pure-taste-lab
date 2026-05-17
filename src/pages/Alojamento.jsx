@@ -298,11 +298,10 @@ const Alojamento = () => {
               </div>
             ))}
           </div>
-          <div className="max-w-4xl mx-auto">
-            <PhotoGallery pageId="alojamento" />
-          </div>
         </div>
       </section>
+
+      <PhotoGallery pageId="alojamento" />
 
       {/* Atividades */}
       <section className="py-16">
