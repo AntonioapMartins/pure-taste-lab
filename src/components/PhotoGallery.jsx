@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { getPageGalleries } from "@/lib/galleries";
+import { useEffect, useState } from "react";
+import { getPageGalleries } from "@/api/galleries";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -10,7 +10,30 @@ export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
 
-  const galleries = getPageGalleries(pageId);
+  const [galleries, setGalleries] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    getPageGalleries(pageId)
+      .then((list) => {
+        if (!active) return;
+        const normalized = (list || []).map((g) => ({
+          id: g.id,
+          title: g.title,
+          type: g.gallery_type || g.type || "grid",
+          photos: (g.images || g.photos || []).map((img) => ({
+            id: img.id,
+            dataUrl: img.image_url || img.dataUrl,
+            caption: img.caption || "",
+          })),
+        }));
+        setGalleries(normalized);
+      })
+      .catch(() => setGalleries([]));
+    return () => {
+      active = false;
+    };
+  }, [pageId]);
 
   const openLightbox = (photos, idx) => {
     setLightboxPhotos(photos);
