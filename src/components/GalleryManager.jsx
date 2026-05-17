@@ -59,9 +59,13 @@ const GalleryManager = () => {
   const loadGalleries = async () => {
     try {
       const res = await getGalleries();
-      setGalleries(res.data || []);
+
+      const data = res?.data;
+     
+      setGalleries(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+	setGalleries([]);
     }
   };
 
@@ -348,7 +352,7 @@ const GalleryManager = () => {
                                   size="icon"
                                   className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
                                   onClick={() =>
-                                    handleRemovePhoto(gallery.id, photo.id)
+                                    handleRemovePhoto(photo.id)
                                   }
                                 >
                                   <Trash2 className="h-3 w-3" />

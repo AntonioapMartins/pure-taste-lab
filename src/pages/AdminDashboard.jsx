@@ -87,7 +87,7 @@ const AdminDashboard = () => {
     setDate(event.event_date || "");
     setDescription(event.description || "");
     setImagePreview(
-      event.media_url ? `http://localhost:3001/uploads/${event.media_url}` : ""
+      event.media_url ? `${import.meta.env.VITE_API_URL}/uploads/${event.media_url}` : ""
     );
     setFiles(event.files || []);
     setDialogOpen(true);
@@ -420,7 +420,7 @@ const AdminDashboard = () => {
                       <TableCell>
                         {event.media_url ? (
                           <img
-                            src={`http://localhost:3001/uploads/${event.media_url}`}
+                            src={`${import.meta.env.VITE_API_URL}/uploads/${event.media_url}`}
                             alt={event.title}
                             className="w-16 h-12 rounded object-cover"
                           />
