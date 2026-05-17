@@ -1,15 +1,26 @@
-import { useState } from "react";
-import { PageLayout } from "@/components/PageLayout";
-import { PhotoGallery } from "@/components/PhotoGallery";
+import { BatteryCharging, Bed, Car, Dumbbell, Eye, PawPrint, Send, TreePine, Tv, UtensilsCrossed, Waves, Wifi, Wind } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageLayout } from "@/components/PageLayout";
+import { PhotoGallery } from "@/components/PhotoGallery";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
+import aloj1 from "@/assets/alojamento/aloj1.jpg";
+import aloj2 from "@/assets/alojamento/aloj2.jpg";
 import alojamentoImage from "@/assets/alojamento.jpg";
-import { Bed, TreePine, Dumbbell, Wifi, Car, Waves, UtensilsCrossed, Tv, Wind, BatteryCharging, Send, PawPrint, Eye } from "lucide-react";
+import atividades1 from "@/assets/alojamento/atividades1.jpg";
+import atividades2 from "@/assets/alojamento/atividades2.jpg";
+import canoagem from "@/assets/alojamento/canoagem.jpg";
+import duplo from "@/assets/alojamento/quarto_duplo.jpeg";
+import individual from "@/assets/alojamento/quarto_individual.jpg";
+import kartodromo from "@/assets/alojamento/kartodromo.jpg";
+import rota from "@/assets/alojamento/rota.jpg";
+import { toast } from "@/hooks/use-toast";
+import twin from "@/assets/alojamento/quarto_twin.jpg";
+import { useState } from "react";
 
 const pricingData = {
   alta: [
@@ -52,24 +63,34 @@ const amenities = [
 const activities = [
   {
     title: "Percurso Entre Pontes e Rios — O Rio Vizela",
-    description: "O rio Vizela nasce no Alto de Morgaír e percorre 45km até ao rio Ave. Nas margens de Rilhadas, o Vizela corre com todo o seu esplendor, alimentando os seus moinhos e tornando esta zona uma das mais bonitas de todo o seu percurso.",
-  },
+    description:
+      "O rio Vizela nasce no Alto de Morgaír e percorre 45km até ao rio Ave. Nas margens de Rilhadas, o Vizela corre com todo o seu esplendor, alimentando os seus moinhos e tornando esta zona uma das mais bonitas de todo o seu percurso.",
+    image: atividades1,
+    },
   {
     title: "Ciclovia — Passeios Bike e E-Bike",
-    description: "A ciclovia ocupa o traçado da linha de caminho-de-ferro Fafe-Guimarães, desativada em 1986. Com 15,4 km, passa pelo nosso espaço, sendo uma mais-valia para quem nos visita.",
-  },
+    description:
+      "A ciclovia ocupa o traçado da linha de caminho-de-ferro Fafe-Guimarães, desativada em 1986. Com 15,4 km, passa pelo nosso espaço, sendo uma mais-valia para quem nos visita.",
+      image: atividades2,
+    },
   {
     title: "Caminhadas — Rota do Milénio",
-    description: "Percursos pedonais pela região com paisagens deslumbrantes, pontes medievais e moinhos tradicionais.",
-  },
+    description:
+      "Percursos pedonais pela região com paisagens deslumbrantes, pontes medievais e moinhos tradicionais.",
+      image: rota,
+    },
   {
     title: "Kartódromo a cerca de 1Km",
-    description: "Kartódromo com diversas modalidades e eventos, ideal para quem procura adrenalina.",
-  },
+    description:
+      "Kartódromo com diversas modalidades e eventos, ideal para quem procura adrenalina.",
+      image: kartodromo,
+    },
   {
     title: "Canoagem — Barragem de Queimadela",
-    description: "Atividades aquáticas na barragem de Queimadela, perfeito para os amantes de desportos náuticos.",
-  },
+    description:
+      "Atividades aquáticas na barragem de Queimadela, perfeito para os amantes de desportos náuticos.",
+      image: canoagem,
+    },
 ];
 
 const Alojamento = () => {
@@ -105,8 +126,8 @@ const Alojamento = () => {
             <p>Não esquecer que também somos <strong className="text-primary">Pet Friendly</strong>.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-            <img src={alojamentoImage} alt="Casa de campo" className="w-full h-80 object-cover rounded-lg shadow-card" />
-            <img src={alojamentoImage} alt="Casa de campo exterior" className="w-full h-80 object-cover rounded-lg shadow-card" />
+            <img src={aloj1} alt="Casa de campo" className="w-full h-80 object-cover rounded-lg shadow-card" />
+            <img src={aloj2} alt="Casa de campo exterior" className="w-full h-80 object-cover rounded-lg shadow-card" />
           </div>
         </div>
       </section>
@@ -117,17 +138,17 @@ const Alojamento = () => {
           <h2 className="text-3xl font-serif font-bold text-foreground text-center mb-10">Quartos</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <Card className="overflow-hidden">
-              <img src={alojamentoImage} alt="Quarto Duplo" className="w-full h-48 object-cover" />
+              <img src={duplo} alt="Quarto Duplo" className="w-full h-48 object-cover" />
               <CardHeader><CardTitle className="font-serif text-lg">Quarto Duplo Vista Piscina</CardTitle></CardHeader>
               <CardContent><p className="text-sm text-muted-foreground">Os nossos quartos duplos dispõem de terraços com vista para o rio Vizela.</p></CardContent>
             </Card>
             <Card className="overflow-hidden">
-              <img src={alojamentoImage} alt="Quarto Twin" className="w-full h-48 object-cover" />
+              <img src={twin} alt="Quarto Twin" className="w-full h-48 object-cover" />
               <CardHeader><CardTitle className="font-serif text-lg">Quarto Twin Familiar</CardTitle></CardHeader>
               <CardContent><p className="text-sm text-muted-foreground">Quartos twin com ocupação para 2 pessoas, com possibilidade de cama extra e vistas para o rio Vizela.</p></CardContent>
             </Card>
             <Card className="overflow-hidden">
-              <img src={alojamentoImage} alt="Quarto Individual" className="w-full h-48 object-cover" />
+              <img src={individual} alt="Quarto Individual" className="w-full h-48 object-cover" />
               <CardHeader><CardTitle className="font-serif text-lg">Quarto Individual</CardTitle></CardHeader>
               <CardContent><p className="text-sm text-muted-foreground">Um quarto aconchegante e recatado, perfeito para viajantes individuais.</p></CardContent>
             </Card>
@@ -290,6 +311,11 @@ const Alojamento = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {activities.map((activity, idx) => (
               <Card key={idx} className="hover:shadow-hover transition-shadow">
+                <img
+                  src={activity.image}
+                  alt={activity.title}
+                  className="w-full h-48 object-cover"
+                />
                 <CardHeader>
                   <CardTitle className="font-serif text-lg">{activity.title}</CardTitle>
                 </CardHeader>
