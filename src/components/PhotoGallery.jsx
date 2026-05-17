@@ -48,6 +48,9 @@ export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
 
   if (galleries.length === 0 && !hasFallback) return null;
 
+  const nonEmptyGalleries = galleries.filter((g) => g.photos.length > 0);
+  if (galleries.length > 0 && nonEmptyGalleries.length === 0) return null;
+
   if (hasFallback) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
