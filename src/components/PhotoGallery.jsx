@@ -79,16 +79,15 @@ export const PhotoGallery = ({ pageId, fallbackImages = [], wrapInSection = true
     );
   }
 
-  return (
+  const content = (
     <div className="space-y-8">
-      {galleries.map((gallery) => {
-        if (gallery.photos.length === 0) return null;
+      {nonEmptyGalleries.map((gallery) => {
         const photos = gallery.photos.map((p) => ({ src: p.dataUrl, alt: p.caption || "" }));
 
         return (
           <div key={gallery.id}>
             {gallery.title && (
-              <h3 className="text-xl font-serif font-semibold text-foreground mb-4">{gallery.title}</h3>
+              <h3 className="text-xl font-serif font-semibold text-foreground mb-4 text-center">{gallery.title}</h3>
             )}
 
             {gallery.type === "carousel" ? (
@@ -136,6 +135,16 @@ export const PhotoGallery = ({ pageId, fallbackImages = [], wrapInSection = true
         onNext={nextImage}
       />
     </div>
+  );
+
+  if (!wrapInSection) return content;
+
+  return (
+    <section className={sectionClassName}>
+      <div className="container mx-auto px-4 max-w-6xl">
+        {content}
+      </div>
+    </section>
   );
 };
 
