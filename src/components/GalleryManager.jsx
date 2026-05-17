@@ -220,8 +220,6 @@ const GalleryManager = () => {
     });
   };
 
-  console.log(galleries)
-
   return (
     <Card>
       <CardHeader>
