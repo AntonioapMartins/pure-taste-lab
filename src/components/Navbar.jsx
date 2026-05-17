@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { Facebook, Instagram, Menu, X, Youtube } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Facebook, Instagram, Youtube } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 const navLinks = [
-  { label: "Home", path: "/" },
+  { label: "Início", path: "/" },
   { label: "Alojamento", path: "/alojamento" },
   { label: "Kartódromo", path: "/kartodromo" },
   { label: "Desporto & Lazer", path: "/desporto-lazer" },

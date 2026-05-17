@@ -1,34 +1,87 @@
 import { PageLayout } from "@/components/PageLayout";
-import { PhotoGallery } from "@/components/PhotoGallery";
-import desportoImage from "@/assets/desporto.jpg";
+import caminhada from "@/assets/desporto/caminhada.jpg";
+import canoagem from "@/assets/desporto/piscina.jpg";
+import natureza from "@/assets/desporto/ciclovia.jpg";
+import orientacao from "@/assets/desporto/orientacao.jpg";
+
+const sections = [
+  {
+    title: "Orientação",
+    image: orientacao,
+    content: `
+Percurso pedestre circular guiado por mapa onde o objetivo é responder a questões em cada ponto.
+
+A atividade termina no ponto de partida com todas as respostas corretas.
+
+Requer marcação prévia e grupo mínimo de 8 pessoas.
+`,
+  },
+  {
+    title: "Caminhadas",
+    image: caminhada,
+    content: `
+Percurso certificado pela Federação de Campismo e Montanhismo de Portugal.
+
+Atividade de natureza, ideal para grupos e famílias.
+`,
+  },
+  {
+    title: "Piscina",
+    image: canoagem,
+    content: `
+Piscinas exteriores com zonas para adultos e crianças.
+
+Bar de apoio e ambiente de lazer.
+
+Aberta de julho a setembro.
+`,
+  },
+  {
+    title: "Ciclovia",
+    image: natureza,
+    content: `
+Ciclovia Fafe–Guimarães com cerca de 14km.
+
+Paisagens naturais e acessos múltiplos ao longo do percurso.
+`,
+  },
+];
 
 const DesportoLazer = () => {
   return (
     <PageLayout title="Desporto & Lazer">
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <img
-              src={desportoImage}
-              alt="Desporto e Lazer"
-              className="w-full h-80 object-cover rounded-lg shadow-card mb-8"
-            />
-            <div className="space-y-4 text-muted-foreground">
-              <p>
-                Rilhadas Turismo oferece uma variedade de atividades desportivas e de lazer para todos os gostos e idades.
-              </p>
-              <p>
-                Desde caminhadas pela natureza exuberante do Minho, passeios de bicicleta, atividades aquáticas,
-                até experiências de aventura ao ar livre — há sempre algo novo para descobrir.
-              </p>
-              <p>
-                O nosso espaço é ideal para quem procura descontrair e ao mesmo tempo manter-se ativo durante a estadia.
-              </p>
+
+      {/* SEÇÕES DETALHADAS */}
+      <section className="py-16">
+        <div className="container mx-auto px-4 space-y-20">
+
+          {sections.map((item, idx) => (
+            <div
+              key={idx}
+              className={`grid md:grid-cols-2 gap-10 items-center ${
+                idx % 2 === 1 ? "md:flex-row-reverse" : ""
+              }`}
+            >
+              <img
+                src={item.image}
+                className="w-full h-80 object-cover rounded-xl"
+              />
+
+              <div>
+                <h2 className="text-2xl font-serif font-bold mb-4">
+                  {item.title}
+                </h2>
+
+                <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
+                  {item.content}
+                </p>
+              </div>
             </div>
-          </div>
+          ))}
+
         </div>
       </section>
-      <PhotoGallery pageId="desporto" />
+
     </PageLayout>
   );
 };

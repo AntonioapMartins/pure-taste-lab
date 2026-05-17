@@ -1,6 +1,6 @@
+import Benefits from "../components/Benefits";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import alojamentoImage from "@/assets/alojamento.jpg";
 
 export const AboutSection = () => {
   return (
@@ -30,13 +30,7 @@ export const AboutSection = () => {
             </Button>
           </Link>
         </div>
-
-        {/* Image grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-12">
-          <img src={alojamentoImage} alt="Espaço Rilhadas" className="w-full h-48 object-cover rounded-lg shadow-card" />
-          <img src={alojamentoImage} alt="Natureza" className="w-full h-48 object-cover rounded-lg shadow-card" />
-          <img src={alojamentoImage} alt="Casas de campo" className="w-full h-48 object-cover rounded-lg shadow-card hidden md:block" />
-        </div>
+        <Benefits />
       </div>
     </section>
   );

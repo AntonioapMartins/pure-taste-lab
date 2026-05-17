@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { getEvents } from "@/lib/events";
+import { CalendarDays, Download, FileText, Image as ImageIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, Image as ImageIcon, FileText, Download } from "lucide-react";
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
+import { getEvents } from "@/lib/events";
 
 export const EventsSection = () => {
   const [events, setEvents] = useState([]);
@@ -78,7 +79,7 @@ export const EventsSection = () => {
           <>
             <div className="text-center mb-12">
               <h2 className="text-4xl font-serif font-bold text-foreground mb-3">
-                PRÓXIMOS EVENTOS / ÚLTIMOS POSTS
+                Próximos Eventos
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
