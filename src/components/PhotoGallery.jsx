@@ -6,7 +6,7 @@ import {
   Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext,
 } from "@/components/ui/carousel";
 
-export const PhotoGallery = ({ pageId, fallbackImages = [] }) => {
+export const PhotoGallery = ({ pageId, fallbackImages = [], wrapInSection = true, sectionClassName = "py-12 bg-muted/30" }) => {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
 
