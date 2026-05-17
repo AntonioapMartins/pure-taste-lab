@@ -278,10 +278,7 @@ const Alojamento = () => {
             ))}
           </div>
           <div className="max-w-4xl mx-auto">
-            <PhotoGallery pageId="alojamento" fallbackImages={[
-              { src: alojamentoImage, alt: "Comodidade" },
-              { src: alojamentoImage, alt: "Comodidade" },
-            ]} />
+            <PhotoGallery pageId="alojamento" />
           </div>
         </div>
       </section>
