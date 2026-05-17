@@ -1,4 +1,5 @@
 import { PageLayout } from "@/components/PageLayout";
+import { PhotoGallery } from "@/components/PhotoGallery";
 import desportoImage from "@/assets/desporto.jpg";
 
 const DesportoLazer = () => {
@@ -25,6 +26,12 @@ const DesportoLazer = () => {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+      <section className="py-12 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <h2 className="text-3xl font-serif font-semibold text-foreground mb-8 text-center">Galeria</h2>
+          <PhotoGallery pageId="desporto" />
         </div>
       </section>
     </PageLayout>
