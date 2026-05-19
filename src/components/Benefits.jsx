@@ -1,5 +1,6 @@
 import Arrow from "../assets/svg/Arrow";
 import ClipPath from "../assets/svg/ClipPath";
+import { Link } from "react-router-dom";
 import Restaurante from "@/assets/restaurante.jpg";
 import alojamento from "@/assets/alojamento.jpg";
 import benefitIcon1 from "../assets/benefits/icon-1.svg";
