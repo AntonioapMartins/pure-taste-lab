@@ -17,6 +17,7 @@ export const benefits = [
     backgroundUrl: "./src/assets/benefits/card-1.svg",
     iconUrl: benefitIcon1,
     imageUrl: alojamento,
+    path: "/alojamento",
   },
   {
     id: "1",
@@ -25,6 +26,7 @@ export const benefits = [
     backgroundUrl: "./src/assets/benefits/card-2.svg",
     iconUrl: benefitIcon2,
     imageUrl: kart,
+    path: "/kartodromo",
   },
   {
     id: "2",
@@ -33,6 +35,7 @@ export const benefits = [
     backgroundUrl: "./src/assets/benefits/card-3.svg",
     iconUrl: benefitIcon2,
     imageUrl: bike,
+    path: "/desporto-lazer",
   },
   {
     id: "3",
@@ -41,6 +44,7 @@ export const benefits = [
     backgroundUrl: "./src/assets/benefits/card-4.svg",
     iconUrl: benefitIcon2,
     imageUrl: Restaurante,
+    path: "/restaurante",
   },
   {
     id: "4",
@@ -49,6 +53,7 @@ export const benefits = [
     backgroundUrl: "./src/assets/benefits/card-5.svg",
     iconUrl: benefitIcon2,
     imageUrl: escolas,
+    path: "/escolas-grupos",
   },
 ];
 
