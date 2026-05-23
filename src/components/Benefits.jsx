@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import Restaurante from "@/assets/restaurante.jpg";
@@ -44,10 +45,16 @@ export const benefits = [
   },
 ];
 
-const BenefitCard = ({ item }) => (
+const BenefitCard = ({ item, index, visible }) => (
   <Link
     to={item.path}
-    className="group bg-card overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-border flex flex-col"
+    style={{
+      animationDelay: visible ? `${index * 150}ms` : "0ms",
+      opacity: visible ? undefined : 0,
+    }}
+    className={`group bg-card overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-border flex flex-col ${
+      visible ? "animate-drop-in" : ""
+    }`}
   >
     <div className="relative h-64 overflow-hidden bg-muted">
       <img
@@ -75,18 +82,43 @@ const BenefitCard = ({ item }) => (
 const Benefits = () => {
   const topRow = benefits.slice(0, 3);
   const bottomRow = benefits.slice(3);
+  const sectionRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <section id="features" className="py-24 bg-stone-50">
+    <section id="features" ref={sectionRef} className="py-24 bg-stone-50">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-          {topRow.map((item) => (
-            <BenefitCard key={item.id} item={item} />
+          {topRow.map((item, i) => (
+            <BenefitCard key={item.id} item={item} index={i} visible={visible} />
           ))}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:max-w-4xl lg:mx-auto">
-          {bottomRow.map((item) => (
-            <BenefitCard key={item.id} item={item} />
+          {bottomRow.map((item, i) => (
+            <BenefitCard
+              key={item.id}
+              item={item}
+              index={topRow.length + i}
+              visible={visible}
+            />
           ))}
         </div>
       </div>
