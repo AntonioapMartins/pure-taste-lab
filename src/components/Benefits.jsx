@@ -53,7 +53,7 @@ const BenefitCard = ({ item, index, visible }) => (
       opacity: visible ? undefined : 0,
     }}
     className={`group bg-card overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-border flex flex-col ${
-      visible ? "animate-drop-in" : ""
+      visible ? "animate-reveal-blur" : ""
     }`}
   >
     <div className="relative h-64 overflow-hidden bg-muted">
