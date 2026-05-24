@@ -86,6 +86,10 @@ export default {
           "0%": { opacity: "0", transform: "translateY(-40px)" },
           "100%": { opacity: "1", transform: "translateY(0)" }
         },
+        "reveal-blur": {
+          "0%": { opacity: "0", filter: "blur(12px)", transform: "translateY(20px)" },
+          "100%": { opacity: "1", filter: "blur(1px)", transform: "translateY(0)" }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
